@@ -386,8 +386,10 @@ def main():
                     train_constr_logger.put(constr_summary_info, iter_value)
                     train_task_logger.put(task_summary_info, iter_value)
                 else:
+                    '''
                     if (diff_loss_value < .05 and
                         ans_loss_value < .35*no_questions): break
+                    '''
 
                     _, total_loss_value, ans_loss_value, preds_info, \
                         total_summary_info, ans_summary_info = sess.run([
