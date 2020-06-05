@@ -100,22 +100,20 @@ def main():
         answerDict = pkl.load(af)
     '''
     max_iterations = 100
-    data_augmentation = False
-    subtract_pixel_mean = True
     use_logic = config.useLogicConstr
-    constr_weight = .00001
+    constr_weight = 1e-6
     nextElement = None
-    evalTrain_ratio = .1
-    dataOps = None
-    minibatch_size = 1
-    supervided_size = 10  # -1 means all of them
 
     print('Setting up logger ...')
     current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    '''
     train_total_logger = Logger('train', 'total', current_time)
     train_constr_logger = Logger('train', 'constr', current_time)
     train_task_logger = Logger('train', 'task', current_time)
     train_ans_logger = Logger('train', 'ans', current_time)
+    '''
+    if config.train:
+        train_logger = Logger('train',current_time=current_time)
 
     # -----------------------------DATA------------------------------------------
     # Load the GQA data.
@@ -123,7 +121,7 @@ def main():
     # with
     # open('/home/catle/Projects/lyrics_tfnorm/data/train_verify_global_balanced_raw_100.pkl','rb')
     # as fh:
-    with open('/home/catle/Projects/lyrics_tfnorm/data/train_all_tasks_raw_100.pkl', 'rb') as fh:
+    with open('/home/catle/Projects/lyrics_tfnorm/data/train_all_tasks_raw_1100.pkl', 'rb') as fh:
         question_data = pkl.load(fh)
     num_images = len(question_data['question_dict'].keys())
     num_tasks = len(question_data['task_dict'].keys())
@@ -411,14 +409,14 @@ def main():
         train_flg = True
         train_op = tf.train.AdamOptimizer(
             0.001).minimize(total_loss)
-    elif config.test:  # config.evalTrain
+    elif config.evalTrain:
         train_flg = False
         train_op = gqa_log.noOp
 
     print("Session initialization the model ...")
     sess.run(tf.global_variables_initializer())
 
-    if config.test:
+    if config.finalTest:
         print("Load model {}".format(config.expName))
         saver.restore(sess,
                         './model/{}.ckpt'.format(config.expName))
@@ -434,7 +432,7 @@ def main():
             family_index += 1
 
             family_name_str = str(family_index)+'_'+imageId
-            # prepare a train (family) dataset
+            # prepare a train (family) dataset instead of a batch
             family_data, family_images = preprocessFamily(
                 train_images, question_family, 'train', trainImageIndex, preprocessor)
             question_data_np = np.float32(family_data['questions'])
@@ -452,9 +450,9 @@ def main():
             feed_dict[task_tr] = task_data_np
             # feed_dict[family_name] = family_name_str
 
-            # for i in range(iterations):
-            total_loss_value, diff_loss_value, prev_loss_value, iter_value = 2.3*num_questions*2, 1., 9999., 0
-            ans_loss_value, task_loss_value = 3.5*num_questions, 2.2*num_questions
+            # total_loss_value, diff_loss_value, prev_loss_value, iter_value = 2.3*num_questions*2, 1., 9999., 0
+            # ans_loss_value, task_loss_value = 3.5*num_questions, 2.2*num_questions
+            iter_value = 0
 
             if train_flg:  # train
                 print('Train on #Iid {}'.format(imageId))
@@ -463,12 +461,6 @@ def main():
                     if use_logic:
                         # break condition constrained training
                         # tfl.setTNorm(id=tfl.SS, p=0)"""
-                        '''
-                        if (diff_loss_value < .15 and
-                            ans_loss_value < .35*no_questions and
-                            task_loss_value < .35*no_questions):
-                            break
-                        '''
 
                         _, total_loss_value, task_loss_value, ans_loss_value, preds_info, \
                             total_summary_info, task_summary_info,\
@@ -478,50 +470,27 @@ def main():
                                 total_summary_ops, task_summary_ops,
                                 constr_summary_ops, ans_summary_ops], feed_dict=feed_dict)
 
-                        '''
-                        print(
-                            '#{} IId {} - {} Qs - Iter {} W-loss:{:.2f}, T-loss/acc:{:.2f}/{:.2f}, A-loss/acc:{:.2f}/{:.2f}'.format(
-                            family_index,imageId,no_questions,iter_value,
-                            total_loss_value,task_loss_value,preds_info[2],
-                            ans_loss_value,preds_info[5]))
-                        '''
-
-                        train_constr_logger.put(
+                        train_logger.put(
                             constr_summary_info, iter_value)
-                        train_task_logger.put(task_summary_info, iter_value)
+                        train_logger.put(task_summary_info, iter_value)
                     else:
-                        '''
-                        if (diff_loss_value < .05 and
-                            ans_loss_value < .35*no_questions): break
-                        '''
-
                         _, total_loss_value, ans_loss_value, preds_info, \
                             total_summary_info, ans_summary_info = sess.run([
                                 train_op, total_loss, ans_loss, preds_op,
                                 total_summary_ops, ans_summary_ops],
                                 feed_dict=feed_dict)
-                        '''
-                        print(
-                            '#{} ImageId {} - {} Qs - Iter {} W-loss:{:.2f}, A-loss:{:.2f}/{:.2f}'.format(
-                            family_index, imageId,no_questions,iter_value,
-                            total_loss_value,ans_loss_value,preds_info[2]))
-                        '''
 
                     # record train into tensorboard log
-                    train_total_logger.put(total_summary_info, iter_value)
-                    train_ans_logger.put(ans_summary_info, iter_value)
+                    train_logger.put(total_summary_info, iter_value)
+                    train_logger.put(ans_summary_info, iter_value)
 
-                    diff_loss_value = np.abs(total_loss_value-prev_loss_value)
-                    prev_loss_value = total_loss_value
+                    # diff_loss_value = np.abs(total_loss_value-prev_loss_value)
+                    # prev_loss_value = total_loss_value
 
                     if iter_value > max_iterations:
                         break
 
-                if family_index % 500 == 0:
-                    save_path = saver.save(
-                        sess, './model/{}.ckpt'.format(config.expName))
-                    print("Model saved in file: {}".format(save_path))
-            else:  # evalTrain
+            elif config.evalTrain:  # evalTrain
                 print('evalTrain on #Iid {}'.format(imageId))
                 # preds_info = sess.run(preds_op, feed_dict=feed_dict)
                 _, total_loss_value, ans_loss_value, preds_info, \
@@ -536,13 +505,19 @@ def main():
                 else:
                     evalTrain_ansAcc.append(preds_info[2])
 
-    if use_logic:
-        print('EvalTrain: T-acc: {:.2f}, A-acc: {:.2f}'.format(
-            np.mean(np.array(evalTrain_taskAcc)),
-            np.mean(np.array(evalTrain_ansAcc))))
-    else:
-        print('EvalTrain: A-acc: {:.2f}'.format(
-            np.mean(np.array(evalTrain_ansAcc))))
+    # ------------------------ OUTPUT ----------------------------------- #
+    if config.train:
+        save_path = saver.save(
+            sess, './model/{}.ckpt'.format(config.expName))
+        print("Model saved in file: {}".format(save_path))
+    elif config.finalTest:
+        if use_logic:
+            print('EvalTrain: T-acc: {:.2f}, A-acc: {:.2f}'.format(
+                np.mean(np.array(evalTrain_taskAcc)),
+                np.mean(np.array(evalTrain_ansAcc))))
+        else:
+            print('EvalTrain: A-acc: {:.2f}'.format(
+                np.mean(np.array(evalTrain_ansAcc))))
 
 
 # -----------------------MAIN------------------------------------------ #
