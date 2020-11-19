@@ -1,7 +1,9 @@
 import os
 import sys
-sys.path.append('/home/catle/Projects/lyrics_tfnorm/tf-logic-dev/')
-sys.path.append('/home/catle/Tools/horovod/build/lib.linux-x86_64-3.7/')
+
+sys.path.append('./')
+sys.path.append('./tf-logic-dev/')
+
 import time
 import math
 import numpy as np

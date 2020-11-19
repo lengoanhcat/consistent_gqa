@@ -4,12 +4,9 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", message="size changed")
 
 import sys
-sys.path.append('/home/catle/Projects/deepproblog/')
+sys.path.append('./')
 sys.path.append('/home/catle/Tools/horovod/build/lib.linux-x86_64-3.7/')
-# temp fix for corrupting
-# /home/catle/Projects/deepproblog/macnetwork/data/gen_gqa_objects_qaVocab.pkl
-# /home/catle/Projects/deepproblog/macnetwork/data/gen_gqa_objects_questionVocab.pkl
-# sys.path.append('/home/catle/Projects/deepproblog/macnetwork/')
+
 is_py2 = sys.version[0] == '2'
 if is_py2:
     import Queue as queue
