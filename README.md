@@ -2,6 +2,7 @@
 
 This code repository contains codes and scripts for running experiments,
 mentioned in the following paper.
+
 [*Logically Consistent Loss for Visual Questions Answering*, Anh-Cat Le-Ngo,
 Truyen Tran, Santu Rana, Sunil Gupta, Svetha Venkatesh](docs/paper.pdf)
 ## Key Logics
@@ -82,7 +83,7 @@ Truyen Tran, Santu Rana, Sunil Gupta, Svetha Venkatesh](docs/paper.pdf)
         constraints.append(
             tfl.constraint(
                 "forall p: forall q: (isDiff(p,q) and ({})) ->  isGoodAns(p,q)".format(entailment_str))\
-            /tf.cast(tf.square(self.batchSize),tf.float32)) # and isConTaskAns(p,q)
+            /tf.cast(tf.square(self.batchSize),tf.float32))
         numCW2 += 1
 ```
 
