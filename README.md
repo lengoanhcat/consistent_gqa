@@ -2,7 +2,8 @@
 
 This code repository contains codes and scripts for running experiments,
 mentioned in the following paper.
-
+[*Logically Consistent Loss for Visual Questions Answering*, Anh-Cat Le-Ngo,
+Truyen Tran, Santu Rana, Sunil Gupta, Svetha Venkatesh](docs/paper.pdf)
 ## Key Logics
 1. C-rule:
 ```python
